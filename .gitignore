@@ -1,0 +1,64 @@
+# ===== OS / Editor junk =====
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# ===== Logs =====
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===== Environment / Secrets =====
+.env
+.env.*
+!.env.example
+
+# ===== Dependencies =====
+node_modules/
+vendor/
+
+# ===== Build outputs =====
+dist/
+build/
+out/
+coverage/
+
+# ===== Cache =====
+.cache/
+.tmp/
+temp/
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+.ruff_cache/
+
+# ===== Java =====
+*.class
+target/
+
+# ===== macOS =====
+.AppleDouble
+.LSOverride
+
+# ===== Windows =====
+$RECYCLE.BIN/
+
+# ===== Linux =====
+*~
+
+wandb/

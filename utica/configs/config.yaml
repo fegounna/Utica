@@ -1,0 +1,118 @@
+model:
+  num_patches: 32
+crops:
+  # crop_rate_range = (min, max); crop keeps (1 - crop_rate) of the sequence then resizes back to size
+  global_crop_removal_range: [0.00, 0.60]
+  local_crop_removal_range:  [0.60, 0.90]
+  local_crops_number: 8
+
+  global_crops_size: 512
+  local_crops_size: 256
+
+  jitter_sigma: 0.2
+
+train:
+  npy_paths: 
+    - "/Data/yessin.moakher/data_1.npy"
+    - "/Data/yessin.moakher/data_2.npy"
+    - "/Data/yessin.moakher/data_3.npy"
+    - "/Data/yessin.moakher/data_4.npy"
+    - "/Data/yessin.moakher/data_5.npy"
+    - "/Data/yessin.moakher/data_6.npy"
+    - "/Data/yessin.moakher/data_7.npy"
+    - "/Data/yessin.moakher/data_8.npy"
+    - "/Data/yessin.moakher/data_12.npy"
+    - "/Data/yessin.moakher/data_13.npy"
+    - "/Data/yessin.moakher/data_32_M256_N100000.npy"
+    - "/Data/yessin.moakher/data_64_M600_N10000.npy"
+    - "/Data/yessin.moakher/data_64_M600_N20000.npy"
+    - "/Data/yessin.moakher/data_6_M20_N100000.npy"
+    - "/Data/yessin.moakher/data_6_M60_N100000.npy"
+    - "/Data/yessin.moakher/data_6_M30_N100000.npy"
+
+  output_dir: /Data/yessin.moakher/mantis_ssl
+
+  batch_size_per_gpu: 128
+  num_workers: 8
+  seed: 123
+
+  # optional
+  gc_period: 150
+  print_freq: 50
+  max_consecutive_nans: 2
+
+optim:
+  epochs: 5
+
+  lr: 0.0005
+  min_lr: 5.0e-07
+
+  warmup_epochs: 0.5
+
+  weight_decay: 0.04
+  weight_decay_end: 0.4
+
+  freeze_last_layer_epochs: 0.05
+
+  clip_grad: 3.0
+
+  adamw_beta1: 0.9
+  adamw_beta2: 0.999
+
+  # optional
+  layerwise_decay: 0.9
+  patch_embed_lr_mult: 0.2
+  schedule_trunc_extra: 0.0
+
+teacher:
+  momentum_teacher: 0.992
+  final_momentum_teacher: 1
+
+  teacher_temp: 0.07
+  warmup_teacher_temp: 0.04
+  warmup_teacher_temp_epochs: 2.5
+
+dino:
+  head_n_prototypes: 65536
+  head_hidden_dim: 2048
+  head_bottleneck_dim: 256
+  head_nlayers: 3
+
+  global_ignore_diagonal: true  
+
+  loss_weight: 1.0
+  koleo_loss_weight: 0.1
+
+ibot:
+  head_n_prototypes: 65536
+  head_hidden_dim: 2048
+  head_bottleneck_dim: 256
+  head_nlayers: 3
+
+  loss_weight: 1.0
+
+  mask_ratio_min_max: [0.1,0.7]
+  mask_sample_probability: 0.5
+
+ddp:
+  find_unused_parameters: false
+
+checkpointing: 
+  period: 2000
+
+wandb:
+  enabled: true
+  project: "utica-ssl"
+  name: null
+
+
+
+
+
+
+
+
+
+
+
+
