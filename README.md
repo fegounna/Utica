@@ -1,1 +1,2 @@
-# UTICA: Unlabeled Time Series Crop Augmented Foundation Model
+# UTICA: Unlabeled Time-Series Crop Augmented Foundation Model
+
