@@ -133,7 +133,7 @@ class SSLMetaArch(nn.Module):
         n_crops, B, T = time_series.shape
         time_series = time_series.flatten(0, 1)  # n_crops*B,T
 
-        backbone_out = self.teacher.backbone(time_series, is_training=True)  # TO do
+        backbone_out = self.teacher.backbone(time_series, is_training=True) 
         cls = backbone_out["x_norm_clstoken"]  # n_crops * B, D
         ibot_patch = backbone_out["x_norm_patchtokens"]  # n_crops * B, P, D
 
