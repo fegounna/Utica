@@ -245,6 +245,7 @@ class Mantis8M(
         self.hidden_dim_scalar_enc = hidden_dim_scalar_enc
         self.epsilon_scalar_enc = epsilon_scalar_enc
         self.seq_len = seq_len
+        self.n_blocks = transf_depth
 
         self.tokgen_unit = TokenGeneratorUnit(
             hidden_dim=hidden_dim,

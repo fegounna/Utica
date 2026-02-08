@@ -44,7 +44,9 @@ class DINOLoss(nn.Module):
         # teacher_output: [batch, prototypes]
         teacher_output = teacher_output.float()
         world_size = get_subgroup_size() if dist.is_initialized() else 1
-        Q = torch.exp(teacher_output / teacher_temp).t()  # Q is K-by-B for consistency with notations from our paper
+        Q = torch.exp(
+            teacher_output / teacher_temp
+        ).t()  # Q is K-by-B for consistency with notations from our paper
         B = Q.shape[1] * world_size  # number of samples to assign
         K = Q.shape[0]  # how many prototypes
 
@@ -88,7 +90,9 @@ class DINOLoss(nn.Module):
         """
         student_crops, B, K = student_logits.shape
         teacher_crops, _, _ = teacher_probs.shape
-        student_logits = F.log_softmax(student_logits.float() / self.student_temp, dim=-1)
+        student_logits = F.log_softmax(
+            student_logits.float() / self.student_temp, dim=-1
+        )
         if not ignore_diagonal:
             loss = -torch.einsum("s b k, t b k -> ", student_logits, teacher_probs)
             return loss / (B * student_crops * teacher_crops)
@@ -108,7 +112,9 @@ class DINOLoss(nn.Module):
         self.len_teacher_output = len(teacher_output)
         self.async_batch_center = torch.sum(teacher_output, dim=0, keepdim=True)
         if dist.is_initialized():
-            self.reduce_handle = dist.all_reduce(self.async_batch_center, async_op=True, group=get_process_subgroup())
+            self.reduce_handle = dist.all_reduce(
+                self.async_batch_center, async_op=True, group=get_process_subgroup()
+            )
 
     @torch.no_grad()
     def apply_center_update(self):
@@ -119,6 +125,8 @@ class DINOLoss(nn.Module):
                 self.reduce_handle.wait()
             _t = self.async_batch_center / (self.len_teacher_output * world_size)
 
-            self.center = self.center * self.center_momentum + _t * (1 - self.center_momentum)
+            self.center = self.center * self.center_momentum + _t * (
+                1 - self.center_momentum
+            )
 
             self.updated = True

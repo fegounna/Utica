@@ -39,7 +39,6 @@ train:
   # optional
   gc_period: 150
   print_freq: 50
-  max_consecutive_nans: 2
 
 optim:
   epochs: 5
@@ -91,14 +90,14 @@ ibot:
 
   loss_weight: 1.0
 
-  mask_ratio_min_max: [0.1,0.7]
+  mask_ratio_min_max: [0.1,0.5]
   mask_sample_probability: 0.5
 
 ddp:
   find_unused_parameters: false
 
 checkpointing: 
-  period: 2000
+  period: 4000
 
 wandb:
   enabled: true

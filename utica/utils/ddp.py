@@ -1,7 +1,6 @@
 import torch.distributed as dist
 
 
-
 def is_distributed_enabled() -> bool:
     return dist.is_available() and dist.is_initialized()
 
@@ -33,6 +32,7 @@ def get_process_subgroup():
     if dist.is_initialized():
         return dist.group.WORLD
     return None
+
 
 def get_subgroup_size():
     return get_world_size()

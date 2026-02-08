@@ -9,11 +9,11 @@ from utica.layers.dino_head import DINOHead
 from utica.model import build_model_from_cfg
 
 from utica.loss.dino_clstoken_loss import DINOLoss
-from utica.loss.koleo_loss import KoLeoLoss,KoLeoLossDistributed
+from utica.loss.koleo_loss import KoLeoLoss
 from utica.loss.ibot_patch_loss import iBOTPatchLoss
 
 from utica.utils.param_groups import get_params_groups_with_decay, fuse_params_groups
-from utica.utils.debug import _prob_stats
+
 
 class SSLMetaArch(nn.Module):
     def __init__(self, cfg):
@@ -46,7 +46,7 @@ class SSLMetaArch(nn.Module):
         teacher_model_dict["dino_head"] = dino_head_class()
         self.dino_loss = DINOLoss(self.dino_out_dim)
 
-        self.koleo_loss = KoLeoLossDistributed()
+        self.koleo_loss = KoLeoLoss()
 
         ibot_head_class = partial(
             DINOHead,
@@ -84,8 +84,6 @@ class SSLMetaArch(nn.Module):
     def forward_backward(
         self, data, teacher_temp
     ) -> tuple[Tensor, dict[str, float | Tensor]]:
-        metrics = {}
-
         n_global_crops = 2
         n_local_crops = self.cfg.crops.local_crops_number
         B = data["collated_local_crops"].shape[0] // n_local_crops
@@ -97,23 +95,6 @@ class SSLMetaArch(nn.Module):
         mask_indices_list = data["mask_indices_list"].cuda(non_blocking=True)
         masks_weight = data["masks_weight"].cuda(non_blocking=True)
         n_masked_patches_tensor = data["n_masked_patches"].cuda(non_blocking=True)
-
-
-        metrics["debug/B"] = torch.tensor(float(B), device=global_crops.device)
-        metrics["mask/ratio"] = masks.float().mean()
-        metrics["mask/n_masked_mean"] = n_masked_patches_tensor.float().mean()
-
-        # how many patches masked per sample
-        metrics["mask/patches_per_sample_mean"] = masks.sum(dim=1).float().mean()
-        metrics["mask/patches_per_sample_std"]  = masks.sum(dim=1).float().std()
-
-        # ratio per sample
-        metrics["mask/ratio_per_sample_mean"] = masks.float().mean(dim=1).mean()
-        metrics["mask/ratio_per_sample_std"]  = masks.float().mean(dim=1).std()
-
-        # which patch indices are masked more often
-        metrics["mask/ratio_per_patch_std"] = masks.float().mean(dim=0).std()
-
 
         teacher_global = self.get_teacher_output(
             global_crops.unflatten(0, (n_global_crops, B)),
@@ -137,25 +118,9 @@ class SSLMetaArch(nn.Module):
             masks_weight=masks_weight,
         )
 
-        # # ----- collapse stats -----
-        # # Teacher centered probs are probabilities already: [2, B, K]
-        # t_probs = teacher_global["cls_centered"]
-        # metrics |= _prob_stats(t_probs.flatten(0, 1), "teacher/cls_centered")
-
-        # # Student logits -> probs
-        # sg = student_global["cls_after_head"]  # [2, B, K]
-        # sl = student_local["cls_after_head"]   # [n_local, B, K]
-        # metrics |= _prob_stats(torch.softmax(sg, dim=-1).flatten(0, 1), "student/global_cls_probs")
-        # metrics |= _prob_stats(torch.softmax(sl, dim=-1).flatten(0, 1), "student/local_cls_probs")
-
-        # metrics["optim/teacher_temp"] = torch.tensor(float(teacher_temp), device=global_crops.device)
-
         self.backprop_loss(loss_accumulator)
 
-        metrics |= loss_dict
-        metrics["loss/total"] = loss_accumulator.detach()
-
-        return loss_accumulator, metrics
+        return loss_accumulator, loss_dict
 
     @torch.no_grad()
     def get_teacher_output(
@@ -304,9 +269,7 @@ class SSLMetaArch(nn.Module):
         loss_dict["dino_local_crops_loss"] = dino_local_crops_loss
 
         loss_accumulator += (
-            self.dino_loss_weight
-            * dino_local_scale
-            * dino_local_crops_loss
+            self.dino_loss_weight * dino_local_scale * dino_local_crops_loss
         )
 
         # DINO global loss: compare post-head CLS tokens: student(global crops) vs. teacher(global crops)
@@ -356,6 +319,7 @@ class SSLMetaArch(nn.Module):
     def get_params_groups(self):
         all_params_groups = []
         for m in self.student.values():
+            print(m)
             all_params_groups += self.get_maybe_fused_params_for_submodel(m)
         return all_params_groups
 

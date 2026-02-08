@@ -26,24 +26,7 @@ from utica.utils.ddp import (
 )
 from utica.utils.wandb import wandb_init, wandb_log, wandb_finish
 from utica.utils.debug import reduce_metrics_mean
-
-
-def save_checkpoint(ckpt_dir: Path, iteration: int, model, optimizer):
-    if not is_main_process():
-        return
-    ckpt_dir.mkdir(parents=True, exist_ok=True)
-
-    path = ckpt_dir / f"{iteration}.pth"
-
-    m = model.module if hasattr(model, "module") else model
-
-    payload = {
-        "iteration": iteration,
-        "student": m.student.state_dict(),
-        "teacher": m.teacher.state_dict(),
-        "optimizer": optimizer.state_dict(),
-    }
-    torch.save(payload, path)
+from utica.utils.checkpoint import save_checkpoint
 
 
 def build_optimizer(cfg, params_groups):
@@ -104,9 +87,9 @@ def build_schedulers(cfg, iters_per_epoch: int):
 
 def apply_optim_scheduler(optimizer, lr, wd, last_layer_lr):
     for pg in optimizer.param_groups:
-        is_last_layer = pg.get("is_last_layer", False)
-        lr_multiplier = pg.get("lr_multiplier", 1.0)
-        wd_multiplier = pg.get("wd_multiplier", 1.0)
+        is_last_layer = pg["is_last_layer"]
+        lr_multiplier = pg["lr_multiplier"]
+        wd_multiplier = pg["wd_multiplier"]
 
         pg["weight_decay"] = float(wd) * float(wd_multiplier)
         if is_last_layer:
@@ -169,7 +152,7 @@ def build_data_loader_from_cfg(cfg):
     return loader, sampler
 
 
-def do_train(cfg, model: SSLMetaArch,run=None):
+def do_train(cfg, model: SSLMetaArch, run=None):
     ckpt_dir = Path(cfg.train.output_dir, "ckpt").expanduser()
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
@@ -214,7 +197,6 @@ def do_train(cfg, model: SSLMetaArch,run=None):
         for batch in data_loader:
             it = iteration
 
-            # manual GC occasionally (optional)
             if (it + 1) % int(getattr(cfg.train, "gc_period", 150)) == 0:
                 gc.collect()
 
@@ -239,13 +221,12 @@ def do_train(cfg, model: SSLMetaArch,run=None):
             metrics_dict["optim/last_layer_lr"] = last_layer_lr
             metrics_dict["optim/teacher_temp"] = teacher_temp
 
-            clip = float(getattr(cfg.optim, "clip_grad", 0.0))
+            clip = cfg.optim.clip_grad
             if clip > 0:
                 torch.nn.utils.clip_grad_norm_(
                     ddp_model.module.student.parameters(), max_norm=clip
                 )
 
-            # ---- post-clip grad norm ----
             with torch.no_grad():
                 total_norm_sq = torch.zeros([], device=device)
                 for p in ddp_model.module.student.parameters():
@@ -261,12 +242,11 @@ def do_train(cfg, model: SSLMetaArch,run=None):
 
             if is_main_process():
                 payload = {k: float(v.item()) for k, v in metrics_dict.items()}
-                payload["epoch_progress"] = (it + 1) / iters_per_epoch 
+                payload["epoch_progress"] = (it + 1) / iters_per_epoch
                 wandb_log(run, payload, step=it)
 
             optimizer.step()
 
-            # EMA teacher update (DINOv3’s model.update_ema(mom))
             ddp_model.module.update_teacher(float(mom))
 
             if (it + 1) % int(cfg.checkpointing.period) == 0:
@@ -291,7 +271,7 @@ def main():
     model = SSLMetaArch(cfg)
 
     run = wandb_init(cfg, is_main_process=is_main_process())
-    do_train(cfg, model,run)
+    do_train(cfg, model, run)
 
     if is_main_process():
         wandb_finish(run)

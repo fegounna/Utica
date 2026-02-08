@@ -12,6 +12,7 @@ from torch import nn
 
 from utica.utils.ddp import get_process_subgroup, get_subgroup_size
 
+
 def lossfunc(t, s, temp):  # noqa: F811
     return torch.sum(t.float() * F.log_softmax(s.float() / temp, dim=-1), dim=-1)
 
@@ -26,10 +27,14 @@ class SinkhornKnoppTeacher(nn.Module):
     """
 
     @torch.no_grad()
-    def forward(self, teacher_output, teacher_temp, n_masked_patches_tensor, n_iterations=3):
+    def forward(
+        self, teacher_output, teacher_temp, n_masked_patches_tensor, n_iterations=3
+    ):
         teacher_output = teacher_output.float()
         # world_size = dist.get_world_size() if dist.is_initialized() else 1
-        Q = torch.exp(teacher_output / teacher_temp).t()  # Q is K-by-B for consistency with notations from our paper
+        Q = torch.exp(
+            teacher_output / teacher_temp
+        ).t()  # Q is K-by-B for consistency with notations from our paper
         # B = Q.shape[1] * world_size # number of samples to assign
         B = n_masked_patches_tensor
         dist.all_reduce(B, group=get_process_subgroup())
@@ -74,7 +79,9 @@ class iBOTPatchLoss(nn.Module):
         self.center.zero_()
 
     @torch.no_grad()
-    def softmax_center_teacher(self, teacher_patch_tokens, teacher_temp, update_centers=True):
+    def softmax_center_teacher(
+        self, teacher_patch_tokens, teacher_temp, update_centers=True
+    ):
         if update_centers:
             self.apply_center_update()
         return F.softmax((teacher_patch_tokens - self.center) / teacher_temp, dim=-1)
@@ -89,7 +96,9 @@ class iBOTPatchLoss(nn.Module):
         t = teacher_patch_tokens
         s = student_patch_tokens
         loss = lossfunc(t, s, self.student_temp)
-        loss = torch.sum(loss * student_masks_flat.float(), dim=-1) / student_masks_flat.sum(dim=-1).clamp(min=1.0)
+        loss = torch.sum(
+            loss * student_masks_flat.float(), dim=-1
+        ) / student_masks_flat.sum(dim=-1).clamp(min=1.0)
         return -loss.mean()
 
     def forward_masked(
@@ -123,9 +132,13 @@ class iBOTPatchLoss(nn.Module):
     def reduce_center_update(self, teacher_patch_tokens):
         self.updated = False
         self.len_teacher_patch_tokens = len(teacher_patch_tokens)
-        self.async_batch_center = torch.sum(teacher_patch_tokens.mean(1), dim=0, keepdim=True)
+        self.async_batch_center = torch.sum(
+            teacher_patch_tokens.mean(1), dim=0, keepdim=True
+        )
         if dist.is_initialized():
-            self.reduce_handle = dist.all_reduce(self.async_batch_center, async_op=True, group=get_process_subgroup())
+            self.reduce_handle = dist.all_reduce(
+                self.async_batch_center, async_op=True, group=get_process_subgroup()
+            )
 
     @torch.no_grad()
     def apply_center_update(self):
@@ -136,6 +149,8 @@ class iBOTPatchLoss(nn.Module):
                 self.reduce_handle.wait()
             _t = self.async_batch_center / (self.len_teacher_patch_tokens * world_size)
 
-            self.center = self.center * self.center_momentum + _t * (1 - self.center_momentum)
+            self.center = self.center * self.center_momentum + _t * (
+                1 - self.center_momentum
+            )
 
             self.updated = True
