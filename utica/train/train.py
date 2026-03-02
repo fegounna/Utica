@@ -100,12 +100,12 @@ def apply_optim_scheduler(optimizer, lr, wd, last_layer_lr):
 
 def build_data_loader_from_cfg(cfg):
     aug = DataAugmentation(
-        global_crop_removal_range=tuple(cfg.crops.global_crop_removal_range),
-        local_crop_removal_range=tuple(cfg.crops.local_crop_removal_range),
+        global_crop_rate_range=tuple(cfg.crops.global_crop_rate_range),
+        local_crop_rate_range=tuple(cfg.crops.local_crop_rate_range),
         local_crops_number=int(cfg.crops.local_crops_number),
         global_crops_size=int(cfg.crops.global_crops_size),
         local_crops_size=int(cfg.crops.local_crops_size),
-        jitter_sigma=float(getattr(cfg.crops, "jitter_sigma", 0.2)),
+        jitter_sigma=tuple(cfg.crops.jitter_sigma),
         seed=int(cfg.train.seed),
     )
 

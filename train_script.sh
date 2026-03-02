@@ -4,12 +4,16 @@ RDZV=timeserdino_001
 WORKDIR=/users/eleves-a/2022/yessin.moakher/timeserdino
 ENV=mantisv2
 
-for h in faisan coucou jabiru gelinotte; do
+for h in faisan coucou gelinotte jabiru epervier harpie kamiche linotte; do
   case "$h" in
     faisan) r=0;;
     coucou) r=1;;
-    jabiru) r=2;;
-    gelinotte) r=3;;
+    gelinotte) r=2;;
+    jabiru) r=3;;
+    epervier) r=4;;
+    harpie) r=5;;
+    kamiche) r=6;;
+    linotte) r=7;;
   esac
 
   echo "→ launching $h rank=$r"
@@ -30,7 +34,7 @@ for h in faisan coucou jabiru gelinotte; do
       export MASTER_ADDR=$MASTER; \
       export MASTER_PORT=$PORT; \
       echo [HOST $h] rank=$r iface=\\\$IFACE master=$MASTER:$PORT; \
-      torchrun --nnodes=4 --nproc_per_node=1 --node_rank=$r \
+      torchrun --nnodes=8 --nproc_per_node=1 --node_rank=$r \
         --rdzv_backend=c10d --rdzv_endpoint=$MASTER:$PORT --rdzv_id=$RDZV \
         -m utica.train.train \
       2>&1 | tee -a $WORKDIR/torchrun_rank${r}_\$(hostname -s).log \

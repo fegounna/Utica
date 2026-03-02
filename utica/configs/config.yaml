@@ -1,15 +1,14 @@
 model:
   num_patches: 32
 crops:
-  # crop_rate_range = (min, max); crop keeps (1 - crop_rate) of the sequence then resizes back to size
-  global_crop_removal_range: [0.00, 0.60]
-  local_crop_removal_range:  [0.60, 0.90]
+  global_crop_rate_range: [0.40, 1.00]
+  local_crop_rate_range:  [0.10, 0.40]
   local_crops_number: 8
 
   global_crops_size: 512
   local_crops_size: 256
 
-  jitter_sigma: 0.2
+  jitter_sigma: [0.0, 0.3]
 
 train:
   npy_paths: 
@@ -23,14 +22,9 @@ train:
     - "/Data/yessin.moakher/data_8.npy"
     - "/Data/yessin.moakher/data_12.npy"
     - "/Data/yessin.moakher/data_13.npy"
-    - "/Data/yessin.moakher/data_32_M256_N100000.npy"
-    - "/Data/yessin.moakher/data_64_M600_N10000.npy"
-    - "/Data/yessin.moakher/data_64_M600_N20000.npy"
-    - "/Data/yessin.moakher/data_6_M20_N100000.npy"
-    - "/Data/yessin.moakher/data_6_M60_N100000.npy"
-    - "/Data/yessin.moakher/data_6_M30_N100000.npy"
 
   output_dir: /Data/yessin.moakher/mantis_ssl
+  data_cache_dir: /Data/yessin.moakher
 
   batch_size_per_gpu: 128
   num_workers: 8
@@ -43,22 +37,21 @@ train:
 optim:
   epochs: 5
 
-  lr: 0.0005
-  min_lr: 5.0e-07
+  lr: 0.001
+  min_lr: 1e-06
 
-  warmup_epochs: 0.5
+  warmup_epochs: 0.8
 
   weight_decay: 0.04
   weight_decay_end: 0.4
 
-  freeze_last_layer_epochs: 0.05
+  freeze_last_layer_epochs: 0.08
 
   clip_grad: 3.0
 
   adamw_beta1: 0.9
   adamw_beta2: 0.999
 
-  # optional
   layerwise_decay: 0.9
   patch_embed_lr_mult: 0.2
   schedule_trunc_extra: 0.0
@@ -90,28 +83,16 @@ ibot:
 
   loss_weight: 1.0
 
-  mask_ratio_min_max: [0.1,0.5]
+  mask_ratio_min_max: [0.1,0.7]
   mask_sample_probability: 0.5
 
 ddp:
   find_unused_parameters: false
 
 checkpointing: 
-  period: 4000
+  period: 1953
 
 wandb:
   enabled: true
   project: "utica-ssl"
   name: null
-
-
-
-
-
-
-
-
-
-
-
-
