@@ -17,9 +17,11 @@ import torch
 from huggingface_hub import hf_hub_download
 from mantis.architecture import Mantis8M
 
-backbone = Mantis8M()
+device = "cuda" if torch.cuda.is_available() else "cpu"
+backbone = Mantis8M(device=device)
 ckpt = hf_hub_download(repo_id="fegounna/Utica", filename="pytorch_model.bin")
-backbone.load_state_dict(torch.load(ckpt, map_location="cpu"), strict=False)
+backbone.load_state_dict(torch.load(ckpt, map_location=device), strict=False)
+backbone = backbone.to(device)
 backbone.eval()
 ```
 
@@ -45,3 +47,4 @@ with torch.no_grad():
   url={https://arxiv.org/abs/2603.01348},
 }
 ```
+
